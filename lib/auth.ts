@@ -98,15 +98,21 @@ export async function getSession(): Promise<User | null> {
   }
   if (!userId) return null;
 
-  const supabase = getServiceClient();
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', userId)
-    .maybeSingle();
+  // Any failure here (misconfiguration, DB unreachable, user deleted) means
+  // "no valid session" rather than a thrown error that would crash the page.
+  try {
+    const supabase = getServiceClient();
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
 
-  if (error || !user) return null;
-  return user as User;
+    if (error || !user) return null;
+    return user as User;
+  } catch {
+    return null;
+  }
 }
 
 /**
